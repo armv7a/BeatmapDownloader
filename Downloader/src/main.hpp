@@ -13,7 +13,6 @@
 #include "osu/OsuConfigManager.h"
 #include "ui/MainUi.h"
 #include "features/Settings.h"
-#include "misc/VersionManager.h"
 #include "utils/gui_utils.h"
 
 void InitFeatures();
@@ -37,6 +36,21 @@ void Run(HMODULE *phModule) {
     LOGI("Waiting for osu! initialization...");
     Sleep(5000);
 
+    wchar_t processPath[MAX_PATH];
+    GetModuleFileNameW(nullptr, processPath, MAX_PATH);
+    auto path = std::filesystem::path(processPath);
+    utils::SetOsuDirPath(path.parent_path());
+
+    // set custom osu path
+    if (!settings.f_OsuPath.getValue().empty()) {
+        if (const auto op = std::filesystem::path(settings.f_OsuPath.getValue()) / "osu!.exe"; exists(op)) {
+            utils::SetOsuDirPath(op.parent_path());
+            LOGI("Using custom osu path: %s", op.string().c_str());
+        } else {
+            LOGW("Osu! path not correct, use deteceted path.");
+        }
+    }
+
     osu::BeatmapManager::GetInstance();
 
     ImGui::CreateContext();
@@ -58,21 +72,6 @@ void Run(HMODULE *phModule) {
 
     LOGD("Check graphics api...");
 
-    wchar_t processPath[MAX_PATH];
-    GetModuleFileNameW(nullptr, processPath, MAX_PATH);
-    auto path = std::filesystem::path(processPath);
-    utils::SetOsuDirPath(path.parent_path());
-
-    // set custom osu path
-    if (!settings.f_OsuPath.getValue().empty()) {
-        if (const auto op = std::filesystem::path(settings.f_OsuPath.getValue()) / "osu!.exe"; exists(op)) {
-            utils::SetOsuDirPath(op.parent_path());
-            LOGI("Using custom osu path: %s", op.string().c_str());
-        } else {
-            LOGW("Osu! path not correct, use deteceted path.");
-        }
-    }
-
     wchar_t username[256 + 1];
     DWORD usernameLen = 256 + 1;
     GetUserNameW(username, &usernameLen);
@@ -91,7 +90,6 @@ void Run(HMODULE *phModule) {
     ui::main::ToggleShow();
 
     GuiHelper::ShowSuccessToast(i18n::I18nManager::GetInstance().getTextCStr("DownloaderLoadSuccess"));
-    misc::VersionManager::CheckUpdate();
 }
 
 #include "features/About.h"

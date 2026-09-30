@@ -241,7 +241,6 @@
     <ClInclude Include="src\misc\Hotkey.hpp" />
     <ClInclude Include="src\misc\ISerializable.h" />
     <ClInclude Include="src\misc\ResourcesLoader.hpp" />
-    <ClInclude Include="src\misc\VersionManager.h" />
     <ClInclude Include="src\network\HttpRequest.h" />
     <ClInclude Include="src\osu\Account.h" />
     <ClInclude Include="src\osu\BeatmapManager.h" />
@@ -324,7 +323,6 @@
     <ClCompile Include="src\features\HandleLinkHook.cpp" />
     <ClCompile Include="src\features\MultiDownload.cpp" />
     <ClCompile Include="src\features\Settings.cpp" />
-    <ClCompile Include="src\misc\VersionManager.cpp" />
     <ClCompile Include="src\network\HttpRequest.cpp" />
     <ClCompile Include="src\osu\Account.cpp" />
     <ClCompile Include="src\osu\BeatmapManager.cpp" />
