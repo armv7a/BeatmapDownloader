@@ -1,0 +1,38 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (Release x86)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build
+        run: msbuild OsuBeatmapDownloader.sln /m /p:Configuration=Release /p:Platform=x86 /verbosity:minimal
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BeatmapDownloader-Release-x86
+          path: |
+            bin/Release-x86/*.exe
+            bin/Release-x86/*.dll
+          if-no-files-found: error

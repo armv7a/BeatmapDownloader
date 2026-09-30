@@ -97,6 +97,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)libraries\imgui;$(ProjectDir)libraries\json;$(ProjectDir)libraries\detours;$(ProjectDir)libraries\utility;$(ProjectDir)libraries\curl;$(ProjectDir)libraries\imgui-notify</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -120,6 +121,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)libraries\imgui;$(ProjectDir)libraries\json;$(ProjectDir)libraries\detours;$(ProjectDir)libraries\utility;$(ProjectDir)libraries\curl;$(ProjectDir)libraries\imgui-notify</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
@@ -144,6 +146,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)libraries\imgui;$(ProjectDir)libraries\json;$(ProjectDir)libraries\detours;$(ProjectDir)libraries\utility;$(ProjectDir)libraries\curl;$(ProjectDir)libraries\imgui-notify</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -167,6 +170,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)libraries\imgui;$(ProjectDir)libraries\json;$(ProjectDir)libraries\detours;$(ProjectDir)libraries\utility;$(ProjectDir)libraries\curl;$(ProjectDir)libraries\imgui-notify</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

@@ -97,8 +97,8 @@ private:
         BYTE *data = nullptr;
 
 #define LOAD_LANG_FILE(lang) try { \
-            if (res::LoadEx(IDR_LANG_##lang, L"LANG", &data)) { \
-                std::string s = std::string(reinterpret_cast<char *>(data)); \
+            if (const DWORD size = res::LoadEx(IDR_LANG_##lang, L"LANG", &data)) { \
+                std::string s(reinterpret_cast<const char *>(data), size); \
                 nlohmann::json j = nlohmann::json::parse(s); \
                 for (auto &i : j.items()) i18nMap[#lang][i.key()] = i.value(); \
                 LOGD("Loaded language file: %s, json size: %zu, map size: %zu", #lang, j.size(), i18nMap[#lang].size()); \
