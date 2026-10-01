@@ -109,5 +109,9 @@
   "BeatmapPackDownloader": "Beatmap Pack Downloader",
   "BeatmapPackDownloadFailedNoSuchPackFound": "No such beatmap pack ID=%d(%s) found!",
   "StartDownloadPack": "Start download beatmap pack: %d(%s)",
-  "BeatmapPackDownloadFailedResponseCodeNotOk": "Beatmap Pack Download failed: Response code: %d"
+  "BeatmapPackDownloadFailedResponseCodeNotOk": "Beatmap Pack Download failed: Response code: %d",
+  "ModFilter": "Mod Filter",
+  "BPDLModFilterDesc": "Only download scores that contain at least one of the selected mods.\nLeave all unchecked to download every score.",
+  "KeyFilter": "Key Filter",
+  "BPDLKeyFilterDesc": "osu!mania only. Only download scores whose key count equals the selected value (default 4K).\nScores played with the xK mod are matched by the keys actually played."
 }

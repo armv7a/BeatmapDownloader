@@ -109,5 +109,9 @@
   "BeatmapPackDownloader": "曲包下载器",
   "BeatmapPackDownloadFailedNoSuchPackFound": "没有找到ID为%d(%s)的曲包！",
   "StartDownloadPack": "开始下载曲包：%d(%s)",
-  "BeatmapPackDownloadFailedResponseCodeNotOk": "曲包下载失败：响应码：%d"
+  "BeatmapPackDownloadFailedResponseCodeNotOk": "曲包下载失败：响应码：%d",
+  "ModFilter": "Mod 筛选",
+  "BPDLModFilterDesc": "只下载带有所选 Mod 的谱面（含其中任意一个即可）。\n全部不勾选则不筛选，下载全部。",
+  "KeyFilter": "键位筛选",
+  "BPDLKeyFilterDesc": "仅 osu!mania 模式有效。只下载键位数等于所选值的成绩（默认 4K）。\n使用 xK mod 的成绩按实际游玩的键位数判断。"
 }

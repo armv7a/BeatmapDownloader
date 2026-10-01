@@ -44,6 +44,116 @@ const char *modeItems[] = {
     "mania"
 };
 
+constexpr int BP_MODE_MANIA = 3;
+constexpr int BP_KEY_FILTER_MIN = 1;
+constexpr int BP_KEY_FILTER_MAX = 10;
+
+const char *bpModItems[] = {
+    "DT",
+    "NC",
+    "HT",
+    "HD",
+    "HR",
+    "FL",
+    "EZ",
+    "NF",
+    "SO"
+};
+
+bool bpModFilter[IM_ARRAYSIZE(bpModItems)]{};
+
+bool bpKeyFilterEnabled = true;
+int bpKeyFilter = 4;
+
+bool HasBPModFilter() {
+    for (const bool selected : bpModFilter) {
+        if (selected)
+            return true;
+    }
+    return false;
+}
+
+bool MatchBPModFilter(const nlohmann::json &score) {
+    if (!HasBPModFilter())
+        return true;
+
+    if (!score.is_object())
+        return false;
+
+    const auto mods = score.find("mods");
+    if (mods == score.end() || !mods->is_array())
+        return false;
+
+    for (const auto &mod : *mods) {
+        if (!mod.is_object())
+            continue;
+
+        const auto acronym = mod.find("acronym");
+        if (acronym == mod.end() || !acronym->is_string())
+            continue;
+
+        const std::string name = acronym->get<std::string>();
+        for (int i = 0; i < IM_ARRAYSIZE(bpModItems); ++i) {
+            if (bpModFilter[i] && name == bpModItems[i])
+                return true;
+        }
+    }
+
+    return false;
+}
+
+int GetBPKeyCount(const nlohmann::json &score) {
+    if (!score.is_object())
+        return -1;
+
+    const auto mods = score.find("mods");
+    if (mods != score.end() && mods->is_array()) {
+        for (const auto &mod : *mods) {
+            if (!mod.is_object())
+                continue;
+
+            const auto acronym = mod.find("acronym");
+            if (acronym == mod.end() || !acronym->is_string())
+                continue;
+
+            const std::string name = acronym->get<std::string>();
+            if (name.size() < 2 || name.back() != 'K')
+                continue;
+
+            bool isKeyMod = true;
+            for (size_t i = 0; i + 1 < name.size(); ++i) {
+                if (name[i] < '0' || name[i] > '9') {
+                    isKeyMod = false;
+                    break;
+                }
+            }
+
+            if (isKeyMod)
+                return std::stoi(name);
+        }
+    }
+
+    const auto beatmap = score.find("beatmap");
+    if (beatmap == score.end() || !beatmap->is_object())
+        return -1;
+
+    const auto cs = beatmap->find("cs");
+    if (cs == beatmap->end() || !cs->is_number())
+        return -1;
+
+    if (cs->is_number_integer())
+        return cs->get<int>();
+
+    return static_cast<int>(cs->get<double>() + 0.5);
+}
+
+bool MatchBPKeyFilter(const nlohmann::json &score) {
+    if (bpDownloadSelect != BP_MODE_MANIA || !bpKeyFilterEnabled)
+        return true;
+
+    return GetBPKeyCount(score) == bpKeyFilter;
+}
+
 void DoMultiLineDownload(const std::string &s) {
     const auto vec = utils::split(s, "\n");
     LOGD("DoMultiLineDownload split size = %zu", vec.size());
@@ -87,6 +197,12 @@ void DoBPDownload(int id, int beg, int end) {
                     downloader::BeatmapInfo bi{downloader::BeatmapType::Bid, -1, true};
                     for (auto &i : j) {
                         if (!i.contains("beatmap_id"))
+                            continue;
+
+                        if (!MatchBPModFilter(i))
+                            continue;
+
+                        if (!MatchBPKeyFilter(i))
                             continue;
 
                         bi.id = i["beatmap_id"];
@@ -405,6 +521,30 @@ void MultiDownload::drawMain() {
         // GuiHelper::ShowTooltip(lang.getTextCStr("BPDLRangeDesc"));
         clamp(begend, 1, begend[1]);
         clamp(begend + 1, begend[0], 100);
+
+        ImGui::Text(lang.getTextCStr("ModFilter"));
+        GuiHelper::ShowTooltip(lang.getTextCStr("BPDLModFilterDesc"));
+        for (int i = 0; i < IM_ARRAYSIZE(bpModItems); ++i) {
+            if (i % 5 != 0)
+                ImGui::SameLine();
+            ImGui::Checkbox(bpModItems[i], &bpModFilter[i]);
+        }
+
+        if (bpDownloadSelect == BP_MODE_MANIA) {
+            ImGui::Checkbox(lang.getTextCStr("KeyFilter"), &bpKeyFilterEnabled);
+            GuiHelper::ShowTooltip(lang.getTextCStr("BPDLKeyFilterDesc"));
+
+            ImGui::BeginDisabled(!bpKeyFilterEnabled);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("-##keyfilter") && bpKeyFilter > BP_KEY_FILTER_MIN)
+                --bpKeyFilter;
+            ImGui::SameLine();
+            ImGui::Text("%dK", bpKeyFilter);
+            ImGui::SameLine();
+            if (ImGui::SmallButton("+##keyfilter") && bpKeyFilter < BP_KEY_FILTER_MAX)
+                ++bpKeyFilter;
+            ImGui::EndDisabled();
+        }
 
         if (ImGui::Button(lang.getTextCStr("Download"))) {
             DoBPDownload(id, begend[0] - 1, begend[1]);
