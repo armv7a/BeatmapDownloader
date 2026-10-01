@@ -13,7 +13,8 @@ Settings::Settings() :
     f_ToastDuration("ToastDuration", 3000),
     f_EnableConsole("EnableConsole", true),
     f_OsuPath("OsuPath", ""),
-    f_Theme("Theme", 0) {
+    f_Theme("Theme", 0),
+    f_ShowMainUiOnStartup("ShowMainUiOnStartup", true) {
 }
 
 void Settings::applyTheme() {
@@ -39,6 +40,9 @@ void Settings::drawMain() {
     if (ImGui::Combo(lang.getTextCStr("Theme"), f_Theme.getPtr(), s_Themes, IM_ARRAYSIZE(s_Themes))) {
         ImGui::SetTheme(s_Themes[f_Theme.getValue()]);
     }
+
+    ImGui::Checkbox(lang.getTextCStr("ShowMainUiOnStartup"), f_ShowMainUiOnStartup.getPtr());
+    GuiHelper::ShowTooltip(lang.getTextCStr("RestartToApply"));
 
     if (ImGui::InputText(lang.getTextCStr("OsuPath"), f_OsuPath.getPtr())) {
         if (!f_OsuPath->empty()) {

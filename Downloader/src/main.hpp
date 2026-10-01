@@ -87,7 +87,10 @@ void Run(HMODULE *phModule) {
     LOGD("Api detected: %s", graphicsApiType == renderer::GraphicsApiType::OpenGL3 ? "OpenGL" : "DirectX");
 
     renderer::Init(graphicsApiType);
-    ui::main::ToggleShow();
+
+    if (settings.f_ShowMainUiOnStartup.getValue()) {
+        ui::main::ToggleShow();
+    }
 
     GuiHelper::ShowSuccessToast(i18n::I18nManager::GetInstance().getTextCStr("DownloaderLoadSuccess"));
 }

@@ -101,6 +101,7 @@
   "IdSearchHotkey": "Toggle Sid/Bid Search UI Show",
   "Main": "Main",
   "Theme": "Theme",
+  "ShowMainUiOnStartup": "Show Main UI On Startup",
   "Paste": "Paste",
   "CurrentVersion": "Current Version: %s(%d)",
   "AlreadyHasDownloadTask": "Already has download task: %d %s-%s [%s]",

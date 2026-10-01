@@ -15,6 +15,7 @@ public:
     config::Field<bool> f_EnableConsole;
     config::Field<std::string> f_OsuPath;
     config::Field<int> f_Theme;
+    config::Field<bool> f_ShowMainUiOnStartup;
 
     static Settings &GetInstance() {
         static Settings instance;
