@@ -26,7 +26,7 @@ features::Downloader::Downloader() :
     f_ProxySeverPassword("ProxyServerPassword", ""),
     f_EnableCustomUserAgent("EnableCustomUserAgent", false),
     f_CustomUserAgent("CustomUserAgent",
-                      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36") {
+                      "BeatmapDownloader/1.0 (+https://github.com/KyuubiRan/BeatmapDownloader)") {
     t_DownloadThread = std::thread(DownloadThread);
     t_SearchThread = std::thread(SearchThread);
 
