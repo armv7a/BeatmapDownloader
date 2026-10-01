@@ -159,7 +159,7 @@ void features::Downloader::drawMain() {
     static const char *mirrorNames[] = {
         "Osu! (official)",
         "Sayobot",
-        "Chimu",
+        "Hinai",
     };
     static int mirrorIdx = (int)f_Mirror.getValue();
     if (ImGui::Combo(lang.getTextCStr("Mirror"), &mirrorIdx, mirrorNames, IM_ARRAYSIZE(mirrorNames))) {

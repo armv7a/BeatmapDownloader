@@ -237,7 +237,7 @@
     <ClInclude Include="src\api\Provider.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\api\Chimu.h">
+    <ClInclude Include="src\api\Hinai.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\api\chimu\Mapset.hpp">
@@ -356,7 +356,7 @@
     <ClCompile Include="src\api\Provider.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\api\Chimu.cpp">
+    <ClCompile Include="src\api\Hinai.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

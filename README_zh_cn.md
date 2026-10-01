@@ -16,7 +16,7 @@
 - [x] 处理游戏内链接（也支持拖动官网连接到游戏内解析）
 - [x] Sayobot 搜索/下载
 - [x] Bancho 搜索/下载
-- [x] Chimu(Bloodcat) 搜索/下载 by [EnergoStalin](https://github.com/EnergoStalin)
+- [x] Hinai 搜索/下载
 - [x] Sid/Bid 搜索
 - [x] 批量下图
 - [x] 一键扒BP

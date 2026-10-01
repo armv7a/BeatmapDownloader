@@ -101,7 +101,7 @@ void Run(HMODULE *phModule) {
 #include "api/Provider.h"
 #include "api/Bancho.h"
 #include "api/Sayobot.h"
-#include "api/Chimu.h"
+#include "api/Hinai.h"
 
 #define INIT_FEAT(NAME) ui::main::AddFeature(&features::NAME::GetInstance())
 
@@ -116,5 +116,5 @@ inline void InitFeatures() {
 
     api::Provider::Register(new api::Bancho());
     api::Provider::Register(new api::Sayobot());
-    api::Provider::Register(new api::Chimu());
+    api::Provider::Register(new api::Hinai());
 }

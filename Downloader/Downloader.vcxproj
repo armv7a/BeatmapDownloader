@@ -185,7 +185,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\api\Chimu.h" />
+    <ClInclude Include="src\api\Hinai.h" />
     <ClInclude Include="libraries\cpp-httplib\httplib.h" />
     <ClInclude Include="libraries\curl\curl.h" />
     <ClInclude Include="libraries\curl\curlver.h" />
@@ -266,7 +266,7 @@
     <ClInclude Include="src\utils\Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\api\Chimu.cpp" />
+    <ClCompile Include="src\api\Hinai.cpp" />
     <ClCompile Include="libraries\imgui\backends\imgui_impl_dx11.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

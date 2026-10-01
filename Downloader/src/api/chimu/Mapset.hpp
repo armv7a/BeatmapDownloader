@@ -129,7 +129,7 @@ struct ChumiMapset {
     std::optional<std::string> creator;
     std::optional<std::string> source;
     std::optional<std::string> tags;
-    std::optional<bool> has_video;
+    std::optional<int64_t> has_video;
     std::optional<int64_t> genre;
     std::optional<int64_t> language;
     std::optional<int64_t> favourites;
@@ -161,8 +161,8 @@ void from_json(const json &j, ChumiMapset &x);
 void to_json(json &j, const ChumiMapset &x);
 
 inline void from_json(const json &j, ChildrenBeatmap &x) {
-    x.beatmap_id = get_stack_optional<int64_t>(j, "BeatmapId");
-    x.parent_set_id = get_stack_optional<int64_t>(j, "ParentSetId");
+    x.beatmap_id = get_stack_optional<int64_t>(j, "BeatmapID");
+    x.parent_set_id = get_stack_optional<int64_t>(j, "ParentSetID");
     x.diff_name = get_stack_optional<std::string>(j, "DiffName");
     x.file_md5 = get_stack_optional<std::string>(j, "FileMD5");
     x.mode = get_stack_optional<int64_t>(j, "Mode");
@@ -183,8 +183,8 @@ inline void from_json(const json &j, ChildrenBeatmap &x) {
 
 inline void to_json(json &j, const ChildrenBeatmap &x) {
     j = json::object();
-    j["BeatmapId"] = x.beatmap_id;
-    j["ParentSetId"] = x.parent_set_id;
+    j["BeatmapID"] = x.beatmap_id;
+    j["ParentSetID"] = x.parent_set_id;
     j["DiffName"] = x.diff_name;
     j["FileMD5"] = x.file_md5;
     j["Mode"] = x.mode;
@@ -204,7 +204,7 @@ inline void to_json(json &j, const ChildrenBeatmap &x) {
 }
 
 inline void from_json(const json &j, ChumiMapset &x) {
-    x.set_id = get_stack_optional<int64_t>(j, "SetId");
+    x.set_id = get_stack_optional<int64_t>(j, "SetID");
     x.children_beatmaps = get_stack_optional<std::vector<ChildrenBeatmap>>(j, "ChildrenBeatmaps");
     x.ranked_status = get_stack_optional<int64_t>(j, "RankedStatus");
     x.approved_date = get_stack_optional<std::string>(j, "ApprovedDate");
@@ -215,7 +215,7 @@ inline void from_json(const json &j, ChumiMapset &x) {
     x.creator = get_stack_optional<std::string>(j, "Creator");
     x.source = get_stack_optional<std::string>(j, "Source");
     x.tags = get_stack_optional<std::string>(j, "Tags");
-    x.has_video = get_stack_optional<bool>(j, "HasVideo");
+    x.has_video = get_stack_optional<int64_t>(j, "HasVideo");
     x.genre = get_stack_optional<int64_t>(j, "Genre");
     x.language = get_stack_optional<int64_t>(j, "Language");
     x.favourites = get_stack_optional<int64_t>(j, "Favourites");
@@ -226,7 +226,7 @@ inline void from_json(const json &j, ChumiMapset &x) {
 
 inline void to_json(json &j, const ChumiMapset &x) {
     j = json::object();
-    j["SetId"] = x.set_id;
+    j["SetID"] = x.set_id;
     j["ChildrenBeatmaps"] = x.children_beatmaps;
     j["RankedStatus"] = x.ranked_status;
     j["ApprovedDate"] = x.approved_date;
