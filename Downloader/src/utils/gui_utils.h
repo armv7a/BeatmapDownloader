@@ -2,11 +2,17 @@
 
 #include <imgui.h>
 #include <imgui_notify.h>
+#include <mutex>
 
 #include "features/Settings.h"
 
 namespace GuiHelper {
 void ShowTooltip(const char *s, bool marked = true);
+
+inline std::mutex &toastMutex() {
+    static std::mutex mutex;
+    return mutex;
+}
 
 template <typename... Fmt>
 void ShowToast(const char *s, Fmt... fmt) {
@@ -14,6 +20,7 @@ void ShowToast(const char *s, Fmt... fmt) {
     if (!settings.f_EnableToast.getValue())
         return;
 
+    std::lock_guard _g(toastMutex());
     ImGui::InsertNotification({ImGuiToastType_None, settings.f_ToastDuration.getValue(), s, fmt...});
 }
 
@@ -26,6 +33,7 @@ void ShowWarnToast(const char *s, Fmt... fmt) {
     ImGuiToast t{ImGuiToastType_Warning, settings.f_ToastDuration.getValue(), s, fmt...};
     t.set_title(i18n::I18nManager::GetInstance().getTextCStr("Warning"));
 
+    std::lock_guard _g(toastMutex());
     ImGui::InsertNotification(t);
 }
 
@@ -38,6 +46,7 @@ void ShowSuccessToast(const char *s, Fmt... fmt) {
     ImGuiToast t{ImGuiToastType_Success, settings.f_ToastDuration.getValue(), s, fmt...};
     t.set_title(i18n::I18nManager::GetInstance().getTextCStr("Success"));
 
+    std::lock_guard _g(toastMutex());
     ImGui::InsertNotification(t);
 }
 
@@ -50,6 +59,7 @@ void ShowErrorToast(const char *s, Fmt... fmt) {
     ImGuiToast t{ImGuiToastType_Error, settings.f_ToastDuration.getValue(), s, fmt...};
     t.set_title(i18n::I18nManager::GetInstance().getTextCStr("Error"));
 
+    std::lock_guard _g(toastMutex());
     ImGui::InsertNotification(t);
 }
 
@@ -62,10 +72,13 @@ void ShowInfoToast(const char *s, Fmt... fmt) {
     ImGuiToast t{ImGuiToastType_Info, settings.f_ToastDuration.getValue(), s, fmt...};
     t.set_title(i18n::I18nManager::GetInstance().getTextCStr("Info"));
 
+    std::lock_guard _g(toastMutex());
     ImGui::InsertNotification(t);
 }
 
 inline void RenderToast() {
+    std::lock_guard _g(toastMutex());
+
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(43.f / 255.f, 43.f / 255.f, 43.f / 255.f, 100.f / 255.f));
     ImGui::RenderNotifications();

@@ -15,12 +15,14 @@ features::downloader::DownloadMirror Provider::getEnum() const { return _enum; }
 
 Provider const *Provider::GetRegisteredByName(std::string name) {
     auto &vec = GetRegistered();
-    return *std::ranges::find_if(vec, [&name](auto p) { return p->getName() == name; });
+    const auto iter = std::ranges::find_if(vec, [&name](auto p) { return p->getName() == name; });
+    return iter == vec.end() ? nullptr : *iter;
 }
 
 Provider const *Provider::GetRegisteredByEnum(features::downloader::DownloadMirror mirror) {
     auto &vec = GetRegistered();
-    return *std::ranges::find_if(vec, [&mirror](auto p) { return p->getEnum() == mirror; });
+    const auto iter = std::ranges::find_if(vec, [&mirror](auto p) { return p->getEnum() == mirror; });
+    return iter == vec.end() ? nullptr : *iter;
 }
 
 std::vector<const Provider *> Provider::_providers;

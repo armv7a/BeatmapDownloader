@@ -107,7 +107,8 @@ void DownloadQueue::drawMain() {
     {
         std::unique_lock _g(m_Mutex);
         for (auto &sid : removed) {
-            m_TaskQueueSet.erase(findTaskBySid(sid));
+            if (const auto iter = findTaskBySid(sid); iter != m_TaskQueueSet.end())
+                m_TaskQueueSet.erase(iter);
         }
         removed.clear();
     }

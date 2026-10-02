@@ -113,5 +113,9 @@
   "ModFilter": "Mod Filter",
   "BPDLModFilterDesc": "Only download scores that contain at least one of the selected mods.\nLeave all unchecked to download every score.",
   "KeyFilter": "Key Filter",
-  "BPDLKeyFilterDesc": "osu!mania only. Only download scores whose key count equals the selected value (default 4K).\nScores played with the xK mod are matched by the keys actually played."
+  "BPDLKeyFilterDesc": "osu!mania only. Only download scores whose key count equals the selected value (default 4K).\nScores played with the xK mod are matched by the keys actually played.",
+  "MirrorDesc": "If the selected mirror fails or times out, the download switches to another mirror automatically.",
+  "DownloadThreads": "Download Threads",
+  "DownloadThreadsDesc": "How many beatmapsets are downloaded at the same time, 1~16 (3 by default).\nDownloads of different beatmapsets run in parallel; lowering it takes effect after the running downloads finish.",
+  "SwitchingMirror": "Download failed, switching to download mirror: %s"
 }

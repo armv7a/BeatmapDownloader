@@ -1,10 +1,16 @@
 ﻿#include "pch.h"
 #include "Downloader.h"
 
+#include <algorithm>
+#include <curl.h>
+#include <mutex>
+#include <optional>
 #include <set>
 #include <shellapi.h>
+#include <system_error>
 
 #include "DownloadQueue.h"
+#include "api/Provider.h"
 #include "api/Sayobot.h"
 #include "config/I18nManager.h"
 #include "misc/Color.h"
@@ -13,6 +19,16 @@
 #include "utils/gui_utils.h"
 
 static std::set<int> s_Canceled{};
+static std::mutex s_CanceledMutex{};
+static std::mutex s_ThreadMutex{};
+static std::atomic<int> s_DownloadThreadCount{0};
+static std::atomic<uint64_t> s_LastSwitchToast{0};
+static int s_EnsuredThreads = 0;
+
+static bool ConsumeCanceled(const int sid) {
+    std::lock_guard _g(s_CanceledMutex);
+    return s_Canceled.erase(sid) > 0;
+}
 
 features::Downloader::Downloader() :
     Feature(),
@@ -20,6 +36,7 @@ features::Downloader::Downloader() :
     f_OsuAccount("OsuAccount", osu::Account{}),
     f_Mirror("DownloadMirror", downloader::DownloadMirror::Sayobot),
     f_DownloadType("DownloadType", downloader::DownloadType::Full),
+    f_DownloadThreads("DownloadThreads", 3),
     f_MoveToOsuFolder("MoveToOsuFolder", false),
     f_ProxySeverType("ProxyServerType", downloader::ProxyServerType::Disabled),
     f_ProxySever("ProxyServer", "localhost:7890"),
@@ -27,44 +44,121 @@ features::Downloader::Downloader() :
     f_EnableCustomUserAgent("EnableCustomUserAgent", false),
     f_CustomUserAgent("CustomUserAgent",
                       "BeatmapDownloader/1.0 (+https://github.com/KyuubiRan/BeatmapDownloader)") {
-    t_DownloadThread = std::thread(DownloadThread);
-    t_SearchThread = std::thread(SearchThread);
+    curl_global_init(CURL_GLOBAL_ALL);
 
-    t_DownloadThread.detach();
+    if (const int threads = std::clamp(f_DownloadThreads.getValue(), downloader::DOWNLOAD_THREADS_MIN,
+                                       downloader::DOWNLOAD_THREADS_MAX);
+        threads != f_DownloadThreads.getValue()) {
+        f_DownloadThreads.setValue(threads);
+    }
+    ensureDownloadThreads(f_DownloadThreads.getValue());
+
+    t_SearchThread = std::thread(SearchThread);
     t_SearchThread.detach();
     LOGI("Inited Downloader");
 }
 
-[[noreturn]] void features::Downloader::DownloadThread() {
+void features::Downloader::ensureDownloadThreads(const int want) {
+    std::lock_guard _g(s_ThreadMutex);
+
+    if (s_EnsuredThreads == want)
+        return;
+
+    while (s_DownloadThreadCount.load() < want) {
+        s_DownloadThreadCount.fetch_add(1);
+        std::thread(DownloadThread).detach();
+    }
+
+    for (int i = s_DownloadThreadCount.load(); i > want; --i) {
+        downloader::DownloadJob job{};
+        job.recycle = true;
+        m_DownloadQueue.push_back(job);
+    }
+
+    s_EnsuredThreads = want;
+    LOGD("Download threads: %d", want);
+}
+
+std::vector<features::downloader::DownloadMirror> features::Downloader::getMirrorCandidates() {
+    const auto primary = f_Mirror.getValue();
+
+    std::vector<downloader::DownloadMirror> ret{primary};
+    for (const auto *provider : api::Provider::GetRegistered()) {
+        const auto mirror = provider->getEnum();
+        if (mirror == primary)
+            continue;
+        if (mirror == downloader::DownloadMirror::OsuOfficial && !f_GrantOsuAccount.getValue())
+            continue;
+        ret.push_back(mirror);
+    }
+
+    return ret;
+}
+
+void features::Downloader::DownloadThread() {
     auto &inst = GetInstance();
     auto &lang = i18n::I18nManager::GetInstance();
 
     while (true) {
-    beg:
-        auto bm = inst.m_DownloadQueue.pop_front();
+        auto job = inst.m_DownloadQueue.pop_front();
+
+        if (job.recycle) {
+            const auto want = std::clamp(inst.f_DownloadThreads.getValue(), downloader::DOWNLOAD_THREADS_MIN,
+                                         downloader::DOWNLOAD_THREADS_MAX);
+            if (s_DownloadThreadCount.load() > want) {
+                s_DownloadThreadCount.fetch_sub(1);
+                LOGD("Recycled a download thread, left %d.", s_DownloadThreadCount.load());
+                return;
+            }
+            continue;
+        }
+
+        auto &bm = job.bm;
         LOGD("Poped dl: %d", bm.sid);
         if (bm.sid <= 0) {
             LOGW("Invalid beatmapsets id: %d, skipped download.", bm.sid);
             continue;
         }
-        if (s_Canceled.contains(bm.sid)) {
+        if (ConsumeCanceled(bm.sid)) {
             LOGI("Canceled: %d, skipped download.", bm.sid);
-            s_Canceled.erase(bm.sid);
+            continue;
+        }
+        if (inst.f_Mirror.getValue() == downloader::DownloadMirror::OsuOfficial && !inst.f_GrantOsuAccount.getValue()) {
+            LOGW("Permission denied on download beatmap by osu!(Official) mirror.");
+            DownloadQueue::GetInstance().notifyFinished(bm.sid);
             continue;
         }
 
-        uint8_t retry = 0;
-        bool success = false;
+        auto path = utils::GetCurrentDirPath() / L"downloads" / (std::to_string(bm.sid) + ".osz");
+
         LOGI("Start download: %d %s-%s (%s)", bm.sid, bm.artist.c_str(), bm.title.c_str(), bm.author.c_str());
         GuiHelper::ShowInfoToast(lang.getTextCStr("StartDownload"), bm.sid);
-        while (!success && retry++ < 3) {
-            if (inst.f_Mirror.getValue() == downloader::DownloadMirror::OsuOfficial && !inst.f_GrantOsuAccount.getValue()) {
-                LOGW("Permission denied on download beatmap by osu!(Official) mirror.");
-                goto beg;
-            }
 
-            auto provider = api::Provider::GetRegisteredByEnum(inst.f_Mirror.getValue());
-            success = provider->downloadBeatmap(bm);
+        const auto mirrors = inst.getMirrorCandidates();
+        auto lastMirror = mirrors.front();
+        bool success = false;
+
+        for (int round = 0; round < downloader::DOWNLOAD_RETRY_ROUNDS && !success; ++round) {
+            for (const auto mirror : mirrors) {
+                const auto *provider = api::Provider::GetRegisteredByEnum(mirror);
+                if (provider == nullptr)
+                    continue;
+
+                if (mirror != lastMirror) {
+                    lastMirror = mirror;
+                    LOGW("Download failed, switching mirror: %s", provider->getName().data());
+
+                    if (const auto now = GetTickCount64(); now - s_LastSwitchToast.load() > 3000) {
+                        s_LastSwitchToast.store(now);
+                        GuiHelper::ShowWarnToast(lang.getTextCStr("SwitchingMirror"), provider->getName().data());
+                    }
+                }
+
+                if (provider->downloadBeatmap(bm)) {
+                    success = true;
+                    break;
+                }
+            }
         }
 
         DownloadQueue::GetInstance().notifyFinished(bm.sid);
@@ -72,15 +166,11 @@ features::Downloader::Downloader() :
         if (!success) {
             LOGW("Download failed (out of retry times): %d", bm.sid);
             GuiHelper::ShowWarnToast(lang.getTextCStr("DownloadFailedOORT"), bm.sid);
+
+            std::error_code ec;
+            remove(path, ec);
             continue;
         }
-
-        std::string fn = std::to_string(bm.sid) + ".osz";
-        auto path = utils::GetCurrentDirPath() / L"downloads";
-        if (!exists(path))
-            create_directories(path);
-
-        path /= fn;
 
         if (!exists(path)) {
             LOGW("Cannot open file (file not exists): %s", path.string().c_str());
@@ -91,7 +181,7 @@ features::Downloader::Downloader() :
             auto song = utils::GetOsuDirPath() / "Songs";
             if (!exists(song))
                 create_directories(song);
-            song /= fn;
+            song /= path.filename();
 
             if (exists(song))
                 remove(song);
@@ -116,9 +206,23 @@ features::Downloader::Downloader() :
         auto info = inst.m_SearchQueue.pop_front();
         LOGD("Poped search: %d", info.id);
 
-        const auto provider = api::Provider::GetRegisteredByEnum(inst.f_Mirror.getValue());
-        if (auto ret = provider->searchBeatmap(info); ret.has_value()) {
-            auto &bm = *ret;
+        const auto mirrors = inst.getMirrorCandidates();
+        std::optional<osu::Beatmap> found;
+
+        for (const auto mirror : mirrors) {
+            const auto *provider = api::Provider::GetRegisteredByEnum(mirror);
+            if (provider == nullptr)
+                continue;
+
+            found = provider->searchBeatmap(info);
+            if (found.has_value())
+                break;
+
+            LOGD("Search failed on mirror %s, trying another.", provider->getName().data());
+        }
+
+        if (found.has_value()) {
+            auto &bm = *found;
             if (osu::BeatmapManager::GetInstance().hasBeatmap(bm) && info.directDownload) {
                 LOGI("Already has beatmapsets: %d, skipped direct download.", bm.sid);
                 GuiHelper::ShowInfoToast(lang.getTextCStr("ExistsBeatmapSkipAutoDownload"), bm.sid);
@@ -127,7 +231,7 @@ features::Downloader::Downloader() :
 
             info.directDownload ? inst.postDownload(bm) : ui::search::result::ShowSearchInfo(bm);
         } else {
-            LOGW("No such map found on %s. ID=%d, Type=%s", provider->getName().data(), info.id,
+            LOGW("No such map found on all mirrors. ID=%d, Type=%s", info.id,
                  info.type == downloader::BeatmapType::Sid ? "beatmapsets" : "beatmapid");
             GuiHelper::ShowWarnToast(lang.getTextCStr("SearchFailed"), info.type == downloader::BeatmapType::Sid ? "sid" : "bid", info.id);
         }
@@ -165,6 +269,7 @@ void features::Downloader::drawMain() {
     if (ImGui::Combo(lang.getTextCStr("Mirror"), &mirrorIdx, mirrorNames, IM_ARRAYSIZE(mirrorNames))) {
         f_Mirror.setValue(static_cast<downloader::DownloadMirror>(mirrorIdx));
     }
+    GuiHelper::ShowTooltip(lang.getTextCStr("MirrorDesc"));
 #pragma endregion
 
 #pragma region DownloadType
@@ -176,6 +281,23 @@ void features::Downloader::drawMain() {
     if (ImGui::Combo(lang.getTextCStr("DownloadType"), &downloadTypeIdx, downloadTypeNames, IM_ARRAYSIZE(downloadTypeNames))) {
         f_DownloadType.setValue(static_cast<downloader::DownloadType>(downloadTypeIdx));
     }
+#pragma endregion
+
+#pragma region DownloadThreads
+    if (ImGui::SmallButton("-##downloadthreads") && f_DownloadThreads.getValue() > downloader::DOWNLOAD_THREADS_MIN) {
+        f_DownloadThreads.setValue(f_DownloadThreads.getValue() - 1);
+        ensureDownloadThreads(f_DownloadThreads.getValue());
+    }
+    ImGui::SameLine();
+    ImGui::Text("%d", f_DownloadThreads.getValue());
+    ImGui::SameLine();
+    if (ImGui::SmallButton("+##downloadthreads") && f_DownloadThreads.getValue() < downloader::DOWNLOAD_THREADS_MAX) {
+        f_DownloadThreads.setValue(f_DownloadThreads.getValue() + 1);
+        ensureDownloadThreads(f_DownloadThreads.getValue());
+    }
+    ImGui::SameLine();
+    ImGui::TextUnformatted(lang.getTextCStr("DownloadThreads"));
+    GuiHelper::ShowTooltip(lang.getTextCStr("DownloadThreadsDesc"));
 #pragma endregion
 
     if (f_Mirror.getValue() == downloader::DownloadMirror::OsuOfficial && !f_GrantOsuAccount.getValue()) {
@@ -217,13 +339,13 @@ features::FeatureInfo &features::Downloader::getInfo() {
 }
 
 void features::Downloader::CancelDownload(int sid) {
+    std::lock_guard _g(s_CanceledMutex);
     s_Canceled.insert(sid);
 }
 
 void features::Downloader::RemoveCancelDownload(int sid) {
-    if (s_Canceled.contains(sid)) {
-        s_Canceled.erase(sid);
-    }
+    std::lock_guard _g(s_CanceledMutex);
+    s_Canceled.erase(sid);
 }
 
 void features::Downloader::postSearch(const downloader::BeatmapInfo &info) {
@@ -238,6 +360,6 @@ void features::Downloader::postDownload(const osu::Beatmap &bm) {
 
     if (!DownloadQueue::GetInstance().addTask(bm))
         return;
-    
-    m_DownloadQueue.push_back(bm);
+
+    m_DownloadQueue.push_back(downloader::DownloadJob{.bm = bm});
 }

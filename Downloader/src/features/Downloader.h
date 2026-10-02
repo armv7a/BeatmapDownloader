@@ -2,8 +2,10 @@
 #include "config/Field.h"
 #include "Feature.h"
 #include <BlockingContainer.hpp>
+#include <atomic>
 #include <deque>
 #include <thread>
+#include <vector>
 
 #include "osu/Account.h"
 #include "osu/Beatmap.h"
@@ -44,20 +46,31 @@ enum class ProxyServerType : uint8_t {
     Socks5,
 };
 
+struct DownloadJob {
+    osu::Beatmap bm;
+    bool recycle = false;
+};
+
+constexpr int DOWNLOAD_THREADS_MIN = 1;
+constexpr int DOWNLOAD_THREADS_MAX = 16;
+constexpr int DOWNLOAD_RETRY_ROUNDS = 3;
+
 }
 
 
 class Downloader : public Feature {
     Downloader();
 
-    container::Blocking<std::deque<osu::Beatmap>> m_DownloadQueue;
+    container::Blocking<std::deque<downloader::DownloadJob>> m_DownloadQueue;
     container::Blocking<std::deque<downloader::BeatmapInfo>> m_SearchQueue;
 
-    [[noreturn]] static void DownloadThread();
+    static void DownloadThread();
     [[noreturn]] static void SearchThread();
 
-    std::thread t_DownloadThread;
     std::thread t_SearchThread;
+
+    void ensureDownloadThreads(int want);
+    [[nodiscard]] std::vector<downloader::DownloadMirror> getMirrorCandidates();
 
 public:
     inline const static char *DEFAULT_USER_AGENT =
@@ -67,6 +80,7 @@ public:
     config::Field<osu::Account> f_OsuAccount;
     config::Field<downloader::DownloadMirror> f_Mirror;
     config::Field<downloader::DownloadType> f_DownloadType;
+    config::Field<int> f_DownloadThreads;
     config::Field<bool> f_MoveToOsuFolder;
 
     config::Field<downloader::ProxyServerType> f_ProxySeverType;

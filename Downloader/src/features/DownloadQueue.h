@@ -26,7 +26,7 @@ struct DownloadTask {
     }
 
     bool operator<(const DownloadTask &dl) const {
-        return insertTime < dl.insertTime;
+        return insertTime != dl.insertTime ? insertTime < dl.insertTime : bm.sid < dl.bm.sid;
     }
 };
 

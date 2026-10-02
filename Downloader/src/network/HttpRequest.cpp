@@ -45,6 +45,8 @@ CURLcode net::curl_get(const char *url, std::string &response, const std::vector
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, string_write_fn);
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
 
 
     if (dl.f_ProxySeverType.getValue() != features::downloader::ProxyServerType::Disabled) {
@@ -110,6 +112,7 @@ CURLcode net::curl_download(const char *url, std::filesystem::path &path, std::v
     fopen_s(&f, path.string().c_str(), "wb");
     if (!f) {
         LOGW("Cannot open file %s", path.string().c_str());
+        curl_easy_cleanup(curl);
         return CURLE_FAILED_INIT;
     }
 
@@ -121,9 +124,9 @@ CURLcode net::curl_download(const char *url, std::filesystem::path &path, std::v
         : features::Downloader::DEFAULT_USER_AGENT);
 
     for (const auto &s : extraHeader) {
-        curl_slist_append(headers, s.c_str());
+        headers = curl_slist_append(headers, s.c_str());
     }
-    curl_slist_append(headers, ua.c_str());
+    headers = curl_slist_append(headers, ua.c_str());
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0);
@@ -139,6 +142,8 @@ CURLcode net::curl_download(const char *url, std::filesystem::path &path, std::v
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 30000);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+    curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 30L);
 
     if (dl.f_ProxySeverType.getValue() != features::downloader::ProxyServerType::Disabled) {
         curl_easy_setopt(curl, CURLOPT_PROXY, dl.f_ProxySever->c_str());

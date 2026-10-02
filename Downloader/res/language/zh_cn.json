@@ -113,5 +113,9 @@
   "ModFilter": "Mod 筛选",
   "BPDLModFilterDesc": "只下载带有所选 Mod 的谱面（含其中任意一个即可）。\n全部不勾选则不筛选，下载全部。",
   "KeyFilter": "键位筛选",
-  "BPDLKeyFilterDesc": "仅 osu!mania 模式有效。只下载键位数等于所选值的成绩（默认 4K）。\n使用 xK mod 的成绩按实际游玩的键位数判断。"
+  "BPDLKeyFilterDesc": "仅 osu!mania 模式有效。只下载键位数等于所选值的成绩（默认 4K）。\n使用 xK mod 的成绩按实际游玩的键位数判断。",
+  "MirrorDesc": "所选镜像站下载失败或超时后，会自动切换到其他镜像站重试。",
+  "DownloadThreads": "下载线程数",
+  "DownloadThreadsDesc": "同时下载的谱面数量，1~16（默认 3）。\n不同谱面会并行下载；调小时需要等正在下载的任务完成。",
+  "SwitchingMirror": "下载失败，正在切换到镜像站：%s"
 }
