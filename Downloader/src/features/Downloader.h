@@ -74,7 +74,7 @@ class Downloader : public Feature {
 
 public:
     inline const static char *DEFAULT_USER_AGENT =
-        "BeatmapDownloader/1.0 (+https://github.com/KyuubiRan/BeatmapDownloader)";
+        "BeatmapDownloader/1.0 (+https://github.com/armv7a/BeatmapDownloader)";
 
     config::Field<bool> f_GrantOsuAccount;
     config::Field<osu::Account> f_OsuAccount;

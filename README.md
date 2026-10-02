@@ -5,7 +5,7 @@ An in-game beatmap downloader for osu!stable
 
 ## Usage
 
-1. Download the latest release from [here](https://github.com/KyuubiRan/BeatmapDownloader/releases)
+1. Download the latest release from [here](https://github.com/armv7a/BeatmapDownloader/releases)
 2. Extract the zip file
 3. Run `Injector.exe`
 4. Select `osu!.exe`
@@ -34,8 +34,8 @@ An in-game beatmap downloader for osu!stable
 
 ## Contributors
 
-<a href="https://github.com/KyuubiRan/BeatmapDownloader/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=KyuubiRan/BeatmapDownloader"  alt="Contributors"/>
+<a href="https://github.com/armv7a/BeatmapDownloader/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=armv7a/BeatmapDownloader"  alt="Contributors"/>
 </a>
 
 

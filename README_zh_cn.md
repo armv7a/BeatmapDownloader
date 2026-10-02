@@ -5,7 +5,7 @@
 
 ## 如何使用
 
-1. 从[此处](https://github.com/KyuubiRan/BeatmapDownloader/releases)下载最新版本
+1. 从[此处](https://github.com/armv7a/BeatmapDownloader/releases)下载最新版本
 2. 解压zip文件
 3. 运行 `Injector.exe`
 4. 选择 `osu!.exe`
@@ -34,8 +34,8 @@
 
 ## 贡献者
 
-<a href="https://github.com/KyuubiRan/BeatmapDownloader/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=KyuubiRan/BeatmapDownloader"  alt="贡献者"/>
+<a href="https://github.com/armv7a/BeatmapDownloader/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=armv7a/BeatmapDownloader"  alt="贡献者"/>
 </a>
 
 ## 鸣谢

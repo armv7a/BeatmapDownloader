@@ -43,7 +43,7 @@ features::Downloader::Downloader() :
     f_ProxySeverPassword("ProxyServerPassword", ""),
     f_EnableCustomUserAgent("EnableCustomUserAgent", false),
     f_CustomUserAgent("CustomUserAgent",
-                      "BeatmapDownloader/1.0 (+https://github.com/KyuubiRan/BeatmapDownloader)") {
+                      "BeatmapDownloader/1.0 (+https://github.com/armv7a/BeatmapDownloader)") {
     curl_global_init(CURL_GLOBAL_ALL);
 
     if (const int threads = std::clamp(f_DownloadThreads.getValue(), downloader::DOWNLOAD_THREADS_MIN,
