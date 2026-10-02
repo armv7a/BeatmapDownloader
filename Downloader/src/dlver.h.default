@@ -1,5 +1,6 @@
 #pragma once
 
 #define LATEST_UPDATE_TIMESTAMP 0
-#define DOWNLOADER_VERSION 0
-#define DOWNLOADER_VERSION_STR "unknown"
+#define DOWNLOADER_VERSION 27
+#define DOWNLOADER_VERSION_STR "2.7"
+#define DOWNLOADER_COMMIT "unknown"

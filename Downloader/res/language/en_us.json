@@ -103,7 +103,7 @@
   "Theme": "Theme",
   "ShowMainUiOnStartup": "Show Main UI On Startup",
   "Paste": "Paste",
-  "CurrentVersion": "Current Version: %s(%d)",
+  "CurrentVersion": "Current Version: %s(%s)",
   "AlreadyHasDownloadTask": "Already has download task: %d %s-%s [%s]",
   "BeatmapPackId": "Beatmap Pack ID",
   "BeatmapPackDownloader": "Beatmap Pack Downloader",

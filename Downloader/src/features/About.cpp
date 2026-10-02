@@ -29,7 +29,7 @@ void About::drawMain() {
     ImGui::Text("%s", lang.getTextCStr("ProjectLink"));
     ImGui::SameLine();
     ImGui::TextUrl("https://github.com/KyuubiRan/BeatmapDownloader");
-    ImGui::TextColored(color::Green, lang.getTextCStr("CurrentVersion"), DOWNLOADER_VERSION_STR, DOWNLOADER_VERSION);
+    ImGui::TextColored(color::Green, lang.getTextCStr("CurrentVersion"), DOWNLOADER_VERSION_STR, DOWNLOADER_COMMIT);
     ImGui::EndGroupPanel();
 
     ImGui::BeginGroupPanel(lang.getTextCStr("Hotkey"));

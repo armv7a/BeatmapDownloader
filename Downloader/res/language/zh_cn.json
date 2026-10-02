@@ -103,7 +103,7 @@
   "Theme": "主题",
   "ShowMainUiOnStartup": "启动时显示主界面",
   "Paste": "粘贴",
-  "CurrentVersion": "当前版本：%s(%d)",
+  "CurrentVersion": "当前版本：%s(%s)",
   "AlreadyHasDownloadTask": "已存在的下载任务：%d %s-%s [%s]",
   "BeatmapPackId": "曲包ID",
   "BeatmapPackDownloader": "曲包下载器",

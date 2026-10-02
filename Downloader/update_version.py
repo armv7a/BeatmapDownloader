@@ -1,96 +1,52 @@
-import http.client
-import json
-import os
+import subprocess
 import time
 
 version_file = "./src/dlver.h"
 
-class Version:
-    def __init__(self):
-        self.version = -1
-        self.version_str = "unknown"
+VERSION_STR = "2.7"
+VERSION = 27
+
+COMMIT_LENGTH = 7
 
 
-def update_version_file(ver: Version):
+def get_commit_id() -> str:
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", f"--short={COMMIT_LENGTH}", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if not commit:
+            return "unknown"
+
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        return commit + "-dirty" if dirty else commit
+    except Exception as e:
+        print("get commit id failed:", e)
+        return "unknown"
+
+
+def update_version_file(commit: str):
     with open(version_file, "w") as f:
         f.write("#pragma once\n")
         f.write("\n")
         f.write("#define LATEST_UPDATE_TIMESTAMP " + str(int(time.time())) + "\n")
-        f.write("#define DOWNLOADER_VERSION " + str(ver.version) + "\n")
-        f.write('#define DOWNLOADER_VERSION_STR "' + ver.version_str + '"\n')
-
-
-def get_last_update_timestamp() -> int:
-    with open(version_file, "r") as f:
-        lines = f.readlines()
-        for line in lines:
-            if line.startswith("#define LATEST_UPDATE_TIMESTAMP"):
-                return int(line.split(" ")[2])
-    return 0
-
-
-def create_default_version_file_if_not_exists():
-    if os.path.exists(version_file):
-        return
-
-    with open(version_file, "w") as f:
-        f.write("#pragma once\n")
-        f.write("\n")
-        f.write("#define LATEST_UPDATE_TIMESTAMP 0\n")
-        f.write("#define DOWNLOADER_VERSION -1\n")
-        f.write('#define DOWNLOADER_VERSION_STR "unknown"\n')
-
-
-def get_version() -> Version:
-    ver = Version()
-    try:
-        conn = http.client.HTTPSConnection("api.github.com")
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-        conn.request(
-            "GET", "/repos/KyuubiRan/BeatmapDownloader/releases/latest", headers=headers
-        )
-        response = conn.getresponse()
-        code = response.getcode()
-        data = response.read()
-        de = data.decode("utf-8")
-        j = json.loads(de)
-
-        if code != 200:
-            print("get version failed, code: ", code)
-            print("msg: ", j["message"])
-            return ver
-
-        version = j["tag_name"]
-        ver.version_str = j["name"]
-        ver.version = int(version)
-        return ver
-    except Exception as e:
-        print(e)
-        return ver
+        f.write("#define DOWNLOADER_VERSION " + str(VERSION) + "\n")
+        f.write('#define DOWNLOADER_VERSION_STR "' + VERSION_STR + '"\n')
+        f.write('#define DOWNLOADER_COMMIT "' + commit + '"\n')
 
 
 def main():
-    create_default_version_file_if_not_exists()
-    last_update_timestamp = get_last_update_timestamp()
-    # 5 min
-    if int(time.time()) - last_update_timestamp < 5 * 60:
-        print("update too frequently, skip")
-        return
+    commit = get_commit_id()
+    print(f"current version: {VERSION_STR}({VERSION}), commit: {commit}")
 
-    version = get_version()
-    if version.version == -1:
-        print("get version failed")
-        return
-
-    print(f"current version: {version.version_str}({version.version})")
-    version.version += 1
-    version.version_str = str(float(version.version_str) + 0.1)
-
-    update_version_file(version)
+    update_version_file(commit)
 
 
 if __name__ == "__main__":
