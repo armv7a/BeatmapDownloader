@@ -1,23 +1,26 @@
 #pragma once
 
+#include <atomic>
+
 namespace ui {
 class InputBlock {
-    inline static int block = 0;
+    inline static std::atomic<int> block = 0;
 
 public:
     InputBlock() = delete;
     
     static void Push() {
-        ++block;
+        block.fetch_add(1);
     }
 
     static void Pop() {
-        if (--block < 0)
-            block = 0;
+        int cur = block.load();
+        while (cur > 0 && !block.compare_exchange_weak(cur, cur - 1)) {
+        }
     }
 
     static bool IsBlocked() {
-        return block;
+        return block.load() > 0;
     }
 };
 }

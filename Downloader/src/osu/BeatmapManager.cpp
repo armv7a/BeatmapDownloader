@@ -22,28 +22,25 @@ unsigned int UnpackULEB128(std::ifstream &fs) {
     if (flag != 0xb) {
         return 0;
     }
-    unsigned char tmpByte = 0;
     unsigned int decodeNum = 0;
-    int i = 0;
-    do {
+    for (int i = 0; i < 5; i++) {
+        unsigned char tmpByte = 0;
         fr(tmpByte);
-        decodeNum += (tmpByte & 0x7f) << 7 * i;
-        i++;
-    } while (tmpByte >= 0x80);
+        decodeNum |= static_cast<unsigned int>(tmpByte & 0x7f) << (7 * i);
+        if (tmpByte < 0x80)
+            break;
+    }
     return decodeNum;
 }
 
 std::string UnpackOsuStr(std::ifstream &fs) {
     const uint32_t size = UnpackULEB128(fs);
-    if (!size)
+    if (!size || size > 16u * 1024u * 1024u)
         return "";
 
-    char *tmpStr = new char[size + 1];
-    fs.read(tmpStr, size);
-    tmpStr[size] = 0;
-
-    std::string ans(tmpStr);
-    delete[] tmpStr;
+    std::string ans(size, '\0');
+    fs.read(ans.data(), static_cast<std::streamsize>(size));
+    ans.resize(static_cast<size_t>(fs.gcount()));
     return ans;
 }
 

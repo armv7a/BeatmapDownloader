@@ -79,7 +79,9 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 DWORD WINAPI MsgHookThread(LPVOID lpParam) {
-    DWORD tid = *(DWORD *)lpParam;
+    DWORD tid = *static_cast<DWORD *>(lpParam);
+    delete static_cast<DWORD *>(lpParam);
+
     g_msgHook = SetWindowsHookEx(WH_GETMESSAGE, GetMsgProc, GetModuleHandle(NULL), tid);
     if (!g_msgHook) {
         LOGE("Cannot set message hook!");
@@ -117,8 +119,11 @@ void OnRenderGL(HDC hdc) {
         ImGui_ImplOpenGL3_Init();
         s_OsuHwnd = WindowFromDC(hdc);
         ImGui_ImplWin32_InitForOpenGL(s_OsuHwnd);
-        DWORD tid = GetCurrentThreadId();
-        CreateThread(nullptr, 0, MsgHookThread, &tid, 0, nullptr);
+        auto *tid = new DWORD(GetCurrentThreadId());
+        if (CreateThread(nullptr, 0, MsgHookThread, tid, 0, nullptr) == nullptr) {
+            LOGE("Cannot create message hook thread!");
+            delete tid;
+        }
         OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(s_OsuHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
     }
 

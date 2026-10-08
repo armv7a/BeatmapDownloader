@@ -105,7 +105,8 @@ public:
     }
 
     void from_json(const nlohmann::json &j) override {
-        m_Keys = j["Keys"].get<std::unordered_set<short>>();
+        if (const auto it = j.find("Keys"); it != j.end() && it->is_array())
+            m_Keys = it->get<std::unordered_set<short>>();
     }
 
     std::unordered_set<short> const &getKeys() {
@@ -379,7 +380,9 @@ static ImGuiKey LegacyToInput(short key) {
 
 static short InputToLegacy(ImGuiKey inputkey) {
     auto &io = ImGui::GetIO();
-    auto key = io.KeyMap[inputkey];
+    int key = -1;
+    if (inputkey >= 0 && inputkey < IM_ARRAYSIZE(io.KeyMap))
+        key = io.KeyMap[inputkey];
     if (key == -1) {
         switch (inputkey) {
         case ImGuiKey_MouseLeft:

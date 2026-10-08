@@ -64,11 +64,17 @@ void SayoResult<T, E0>::to_json(nlohmann::json &j) const {
 
 template <typename T, std::enable_if_t<std::is_base_of_v<ISerializable, T>>*E0>
 void SayoResult<T, E0>::from_json(const nlohmann::json &j) {
-    status = j["status"];
+    if (const auto it = j.find("status"); it != j.end() && it->is_number())
+        status = it->get<int>();
+    else
+        status = -1;
+
     if (status == 0) {
-        if (!data) data = T();
-        auto &d = *data;
-        d.from_json(j["data"]);
+        if (const auto it = j.find("data"); it != j.end() && it->is_object()) {
+            if (!data) data = T();
+            auto &d = *data;
+            d.from_json(*it);
+        }
     }
 }
 

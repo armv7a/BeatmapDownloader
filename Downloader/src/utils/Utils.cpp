@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Utils.h"
 
+#include <cctype>
+#include <fstream>
+
 namespace utils {
 static HMODULE g_hModule = NULL;
 static std::filesystem::path g_curDirPath;
@@ -34,6 +37,19 @@ std::filesystem::path GetCurrentDirPath() {
 
 std::filesystem::path GetOsuDirPath() {
     return g_osuDirPath;
+}
+
+bool IsOszArchive(const std::filesystem::path &path) {
+    std::ifstream fs(path, std::ios::binary);
+    if (!fs.is_open())
+        return false;
+
+    unsigned char magic[4]{};
+    fs.read(reinterpret_cast<char *>(magic), sizeof(magic));
+    if (fs.gcount() != sizeof(magic))
+        return false;
+
+    return magic[0] == 'P' && magic[1] == 'K' && (magic[2] == 0x03 || magic[2] == 0x05 || magic[2] == 0x07);
 }
 
 std::wstring s2ws(const std::string &s) {
@@ -75,6 +91,22 @@ std::string &trim_begin(std::string &str) {
 
 std::string &trim(std::string &str) {
     return trim_begin(trim_end(str));
+}
+
+std::string UrlEncode(const std::string &s) {
+    static constexpr char hex[] = "0123456789ABCDEF";
+    std::string out;
+    out.reserve(s.size());
+    for (const unsigned char c : s) {
+        if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            out.push_back(static_cast<char>(c));
+        } else {
+            out.push_back('%');
+            out.push_back(hex[c >> 4]);
+            out.push_back(hex[c & 0x0F]);
+        }
+    }
+    return out;
 }
 
 std::vector<std::string> split(std::string res, const char split) {

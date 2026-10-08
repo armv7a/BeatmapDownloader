@@ -23,14 +23,8 @@ std::optional<osu::Beatmap> api::Bancho::searchBeatmap(const features::downloade
 
     // https://osu.ppy.sh/web/osu-search-set.php?u={username}&h={md5hash}&{type}={id};
 
-    auto url = std::format("https://osu.ppy.sh/web/osu-search-set.php?u={0}&h={1}&{2}={3}", un, pw,
+    auto url = std::format("https://osu.ppy.sh/web/osu-search-set.php?u={0}&h={1}&{2}={3}", utils::UrlEncode(un), pw,
                            info.type == features::downloader::BeatmapType::Sid ? "s" : "b", info.id);
-    // replace ' ' to "%20"
-    for (size_t i = 0; i < url.size(); ++i) {
-        if (url[i] == ' ') {
-            url.replace(i, 1, "%20");
-        }
-    }
 
     std::string res;
     int ret = -1;
@@ -42,8 +36,8 @@ std::optional<osu::Beatmap> api::Bancho::searchBeatmap(const features::downloade
         }
 
         const auto l = utils::split(res, '|');
-        if (l.empty()) {
-            LOGW("Official search failed! Cannot parse result!");
+        if (l.size() < 15) {
+            LOGW("Official search failed! Unexpected field count: %zu", l.size());
             return {};
         }
 
@@ -108,13 +102,7 @@ bool api::Bancho::downloadBeatmap(const osu::Beatmap &bm) const {
     // https://osu.ppy.sh/d/{0}{novideo}?u={username}&h={md5hash}&vv=2
     // https://osu.ppy.sh/d/22276?u=abcd&h=abcd&vv=2
     // https://osu.ppy.sh/d/22276n?u=abcd&h=abcd&vv=2
-    auto url = std::format("https://osu.ppy.sh/d/{0}{1}?u={2}&h={3}&vv=2", bm.sid, noVideo ? "n" : "", un, pw);
-    // replace ' ' to "%20"
-    for (size_t i = 0; i < url.size(); ++i) {
-        if (url[i] == ' ') {
-            url.replace(i, 1, "%20");
-        }
-    }
+    auto url = std::format("https://osu.ppy.sh/d/{0}{1}?u={2}&h={3}&vv=2", bm.sid, noVideo ? "n" : "", utils::UrlEncode(un), pw);
 
     auto path = utils::GetCurrentDirPath() / L"downloads" / (std::to_string(bm.sid) + ".osz");
     auto *tsk = features::DownloadQueue::GetInstance().getTask(bm);
@@ -123,7 +111,7 @@ bool api::Bancho::downloadBeatmap(const osu::Beatmap &bm) const {
         LOGI("Success download beatmapsets: %d", bm.sid);
         return true;
     } else {
-        LOGW("Osu official download failed: CURL_CODE=%d, RESPONSE_CODE=%d", ret, ret);
+        LOGW("Osu official download failed: CURL_CODE=%d, RESPONSE_CODE=%d", code, ret);
         return false;
     }
 }

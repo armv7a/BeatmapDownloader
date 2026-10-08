@@ -63,7 +63,8 @@ void ui::search::beatmapid::Update() {
     }
     ImGui::SameLine();
     if (ImGui::Button(lang.getTextCStr("Paste"))) {
-        input = ImGui::GetClipboardText();
+        if (const char *clip = ImGui::GetClipboardText(); clip != nullptr)
+            input = clip;
     }
 
     ImGui::SameLine();

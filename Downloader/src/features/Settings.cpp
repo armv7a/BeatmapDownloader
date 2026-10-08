@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "Settings.h"
 
+#include <algorithm>
+
 #include "utils/gui_utils.h"
 
 namespace features {
@@ -22,6 +24,10 @@ void Settings::applyTheme() {
         LOGW("Apply theme failed: ImGui Context == nullptr");
         return;
     }
+    if (f_Theme.getValue() < 0 || f_Theme.getValue() >= IM_ARRAYSIZE(s_Themes)) {
+        LOGW("Theme index %d out of range, falling back to default", f_Theme.getValue());
+        f_Theme.setValue(0);
+    }
     ImGui::SetTheme(s_Themes[f_Theme.getValue()]);
 }
 
@@ -38,7 +44,7 @@ void Settings::drawMain() {
     }
 
     if (ImGui::Combo(lang.getTextCStr("Theme"), f_Theme.getPtr(), s_Themes, IM_ARRAYSIZE(s_Themes))) {
-        ImGui::SetTheme(s_Themes[f_Theme.getValue()]);
+        ImGui::SetTheme(s_Themes[std::clamp(f_Theme.getValue(), 0, IM_ARRAYSIZE(s_Themes) - 1)]);
     }
 
     ImGui::Checkbox(lang.getTextCStr("ShowMainUiOnStartup"), f_ShowMainUiOnStartup.getPtr());

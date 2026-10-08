@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <cstdint>
 #include <optional>
 #include <regex>
 
@@ -13,26 +14,42 @@ public:
         const std::string &link,
         const features::downloader::BeatmapType defIdType = features::downloader::BeatmapType::Sid) {
 
-        const static std::string sidRegex = R"(/?(beatmapsets|s)/?(\d+))";
+        static const std::regex sidRegex(R"((?:^|[/=])(?:beatmapsets|s)/(\d+))");
+        static const std::regex bidRegex(R"((?:^|[/=])(?:beatmaps|b)/(\d+))");
+        static const std::regex idRegex(R"(^(\d+)$)");
+
         std::smatch match;
-        if (const std::regex re1(sidRegex); std::regex_search(link, match, re1) && match.size() > 2) {
-            const int id = std::stoi(match[2].str());
-            return features::downloader::BeatmapInfo{features::downloader::BeatmapType::Sid, id};
+        if (std::regex_search(link, match, sidRegex) && match.size() > 1) {
+            if (const auto id = ParseId(match[1].str()); id.has_value()) {
+                return features::downloader::BeatmapInfo{features::downloader::BeatmapType::Sid, *id};
+            }
         }
 
-        const static std::string bidRegex = R"(/?(beatmaps|b)/?(\d+))";
-        if (const std::regex re2(bidRegex); std::regex_search(link, match, re2) && match.size() > 2) {
-            const int id = std::stoi(match[2].str());
-            return features::downloader::BeatmapInfo{features::downloader::BeatmapType::Bid, id};
+        if (std::regex_search(link, match, bidRegex) && match.size() > 1) {
+            if (const auto id = ParseId(match[1].str()); id.has_value()) {
+                return features::downloader::BeatmapInfo{features::downloader::BeatmapType::Bid, *id};
+            }
         }
 
-        const static std::string idRegex = R"(^(\d+)$)";
-        if (const std::regex re3(idRegex); std::regex_search(link, match, re3) && match.size() > 1) {
-            const int id = std::stoi(match[1].str());
-            return features::downloader::BeatmapInfo{defIdType, id};
+        if (std::regex_search(link, match, idRegex) && match.size() > 1) {
+            if (const auto id = ParseId(match[1].str()); id.has_value()) {
+                return features::downloader::BeatmapInfo{defIdType, *id};
+            }
         }
 
         return {};
+    }
+
+private:
+    static std::optional<int> ParseId(const std::string &digits) {
+        try {
+            const auto id = std::stoll(digits);
+            if (id <= 0 || id > INT32_MAX)
+                return {};
+            return static_cast<int>(id);
+        } catch (...) {
+            return {};
+        }
     }
 };
 

@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "Hinai.h"
+
+#include <exception>
+
 #include "network/HttpRequest.h"
 #include "utils/Utils.h"
 #include "api/chimu/Mapset.hpp"
@@ -19,15 +22,26 @@ int32_t api::Hinai::_convertToSetId(const features::downloader::BeatmapInfo &inf
         return -1;
     }
 
-    const auto j = nlohmann::json::parse(response);
-    api::chumi::ChumiMap map;
-    api::chumi::from_json(j, map);
-    if (map.error_message.has_value()) {
-        LOGW("Hinai search failed: code=%d %s", resCode, map.error_message.value().c_str());
-        return -1;
+    try {
+        const auto j = nlohmann::json::parse(response);
+        api::chumi::ChumiMap map;
+        api::chumi::from_json(j, map);
+        if (map.error_message.has_value()) {
+            LOGW("Hinai search failed: code=%d %s", resCode, map.error_message.value().c_str());
+            return -1;
+        }
+
+        if (!map.parent_set_id.has_value()) {
+            LOGW("Hinai search failed: response has no parent_set_id");
+            return -1;
+        }
+
+        return static_cast<int32_t>(map.parent_set_id.value());
+    } catch (const std::exception &e) {
+        LOGW("Cannot parse Hinai response: %s", e.what());
     }
 
-    return static_cast<int32_t>(map.parent_set_id.value());
+    return -1;
 }
 
 api::Hinai::Hinai() : Provider("Hinai", "https://mirror.hinamizawa.ai/docs", features::downloader::DownloadMirror::Hinai) {}
@@ -45,16 +59,23 @@ std::optional<osu::Beatmap> api::Hinai::searchBeatmap(const features::downloader
         return {};
     }
 
-    const auto j = nlohmann::json::parse(response);
-    api::chumi::ChumiMapset mapset;
-    api::chumi::from_json(j, mapset);
+    try {
+        const auto j = nlohmann::json::parse(response);
+        api::chumi::ChumiMapset mapset;
+        api::chumi::from_json(j, mapset);
 
-    if (mapset.error_code.has_value() || mapset.error_message.has_value()) {
-        LOGW("Hinai search failed: code=%s %s", mapset.error_code.value().c_str(), mapset.error_message.value().c_str());
-        return {};
+        if (mapset.error_code.has_value() || mapset.error_message.has_value()) {
+            LOGW("Hinai search failed: code=%s %s", mapset.error_code.value_or("").c_str(),
+                 mapset.error_message.value_or("").c_str());
+            return {};
+        }
+
+        return mapset.to_beatmap();
+    } catch (const std::exception &e) {
+        LOGW("Cannot parse Hinai response: %s", e.what());
     }
 
-    return mapset.to_beatmap();
+    return {};
 }
 
 bool api::Hinai::downloadBeatmap(const osu::Beatmap &bm) const {

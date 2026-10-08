@@ -141,12 +141,22 @@ struct ChumiMapset {
 };
 
 osu::Beatmap ChumiMapset::to_beatmap() const {
-    std::vector<int> ids;
-    ids.reserve(children_beatmaps.value().size());
-    for (auto it : children_beatmaps.value()) {
-        ids.push_back(static_cast<int>(it.beatmap_id.value()));
+    osu::Beatmap bm{};
+    bm.title = title.value_or("");
+    bm.artist = artist.value_or("");
+    bm.author = creator.value_or("");
+    bm.sid = static_cast<int32_t>(set_id.value_or(0));
+    bm.hasVideo = has_video.value_or(0) != 0;
+
+    if (children_beatmaps.has_value()) {
+        bm.bid.reserve(children_beatmaps->size());
+        for (const auto &it : *children_beatmaps) {
+            if (it.beatmap_id.has_value())
+                bm.bid.push_back(static_cast<int32_t>(*it.beatmap_id));
+        }
     }
-    return {title.value(), artist.value(), creator.value(), ids, static_cast<int>(set_id.value()), has_video.value() != 0};
+
+    return bm;
 }
 
 } // namespace chumi

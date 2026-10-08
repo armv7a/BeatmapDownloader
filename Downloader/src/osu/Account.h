@@ -6,6 +6,7 @@
 namespace osu {
 class Password : public ISerializable {
     std::string m_Password;
+    bool m_StoredAsHash = false;
 
     friend class Account;
 
@@ -20,6 +21,13 @@ public:
     void from_json(const nlohmann::json &j) override;
 
     std::string md5() const;
+
+    [[nodiscard]] bool empty() const { return m_Password.empty(); }
+
+    void setPlain(const std::string &pw) {
+        m_Password = pw;
+        m_StoredAsHash = false;
+    }
 };
 
 class Account : public ISerializable {
@@ -42,7 +50,7 @@ public:
     }
 
     void setPassword(const std::string &pw) {
-        m_Password.m_Password = pw;
+        m_Password.setPlain(pw);
     }
 
     void to_json(nlohmann::json &j) const override;

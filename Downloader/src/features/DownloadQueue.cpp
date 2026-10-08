@@ -9,14 +9,15 @@
 
 namespace features {
 
-std::set<int> removed{};
-
 void DownloadQueue::cancel(const int sid) const {
     if (const auto iter = findTaskBySid(sid); iter == m_TaskQueueSet.end()) {
         LOGW("No download task: %d", sid);
         return;
     }
-    removed.insert(sid);
+    {
+        std::lock_guard _g(m_RemovedMutex);
+        m_RemovedSet.insert(sid);
+    }
     Downloader::CancelDownload(sid);
 }
 
@@ -106,11 +107,12 @@ void DownloadQueue::drawMain() {
     
     {
         std::unique_lock _g(m_Mutex);
-        for (auto &sid : removed) {
+        std::lock_guard _r(m_RemovedMutex);
+        for (auto &sid : m_RemovedSet) {
             if (const auto iter = findTaskBySid(sid); iter != m_TaskQueueSet.end())
                 m_TaskQueueSet.erase(iter);
         }
-        removed.clear();
+        m_RemovedSet.clear();
     }
 }
 

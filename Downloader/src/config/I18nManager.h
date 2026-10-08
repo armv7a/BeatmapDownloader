@@ -35,13 +35,22 @@ public:
         return instance;
     }
 
+    static const std::string *Lookup(Language lang, std::string_view key) {
+        const std::string k(key);
+        if (const auto langIt = i18nMap.find(GetLanguageName(lang)); langIt != i18nMap.end()) {
+            if (const auto it = langIt->second.find(k); it != langIt->second.end())
+                return &it->second;
+        }
+        if (const auto enIt = i18nMap.find("EN_US"); enIt != i18nMap.end()) {
+            if (const auto it = enIt->second.find(k); it != enIt->second.end())
+                return &it->second;
+        }
+        return nullptr;
+    }
+
     std::string_view getText(std::string_view key) {
-        if (auto &map = i18nMap[GetLanguageName(lang)]; map.contains(key.data())) {
-            return map[key.data()];
-        }
-        if (i18nMap["EN_US"].contains(key.data())) {
-            return i18nMap["EN_US"][key.data()];
-        }
+        if (const auto *v = Lookup(lang, key); v != nullptr)
+            return *v;
         return key;
     }
 
@@ -50,13 +59,7 @@ public:
     }
 
     std::string_view getText(const char *key) {
-        if (auto &map = i18nMap[GetLanguageName(lang)]; map.contains(key)) {
-            return map[key];
-        }
-        if (i18nMap["EN_US"].contains(key)) {
-            return i18nMap["EN_US"][key];
-        }
-        return key;
+        return getText(std::string_view(key));
     }
 
     static std::string_view GetText(const char *key) {
@@ -64,13 +67,12 @@ public:
     }
 
     const char *getTextCStr(std::string_view key) {
-        if (auto &map = i18nMap[GetLanguageName(lang)]; map.contains(key.data())) {
-            return map[key.data()].c_str();
-        }
-        if (i18nMap["EN_US"].contains(key.data())) {
-            return i18nMap["EN_US"][key.data()].c_str();
-        }
-        return key.data();
+        if (const auto *v = Lookup(lang, key); v != nullptr)
+            return v->c_str();
+
+        static thread_local std::string fallback;
+        fallback.assign(key);
+        return fallback.c_str();
     }
 
     static const char *GetTextCStr(std::string_view key) {
@@ -78,13 +80,7 @@ public:
     }
 
     const char *getTextCStr(const char *key) {
-        if (auto &map = i18nMap[GetLanguageName(lang)]; map.contains(key)) {
-            return map[key].c_str();
-        }
-        if (i18nMap["EN_US"].contains(key)) {
-            return i18nMap["EN_US"][key].c_str();
-        }
-        return key;
+        return getTextCStr(std::string_view(key));
     }
 
     static const char *GetTextCStr(const char *key) {

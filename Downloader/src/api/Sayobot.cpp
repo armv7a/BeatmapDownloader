@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "Sayobot.h"
 
+#include <exception>
+
 #include "network/HttpRequest.h"
 #include "utils/Utils.h"
 
@@ -68,19 +70,23 @@ std::optional<osu::Beatmap> api::Sayobot::searchBeatmap(const features::download
     
     if (const CURLcode code = net::curl_get(s.c_str(), response, &resCode); code == CURLE_OK && resCode == 200) {
         // LOGD("Sayo search response: %s", response.c_str());
-        const auto j = nlohmann::json::parse(response);
-        api::sayobot::SayoResult<api::sayobot::SayoBeatmapDataV2> data;
-        data.from_json(j);
+        try {
+            const auto j = nlohmann::json::parse(response);
+            api::sayobot::SayoResult<api::sayobot::SayoBeatmapDataV2> data;
+            data.from_json(j);
 
-        if (data.status == 0) {
-            if (data.data.has_value()) {
-                return std::optional(data.data.value().to_beatmap());
-            } else {
-                return {};
+            if (data.status == 0) {
+                if (data.data.has_value()) {
+                    return std::optional(data.data.value().to_beatmap());
+                } else {
+                    return {};
+                }
             }
-        }
 
-        LOGW("Sayo search failed: code=%d", data.status);
+            LOGW("Sayo search failed: code=%d", data.status);
+        } catch (const std::exception &e) {
+            LOGW("Cannot parse Sayobot response: %s", e.what());
+        }
     } else {
         LOGW("Sayo search failed: CURL_CODE=%d, RESPONSE_CODE=%d", code, resCode);
     }

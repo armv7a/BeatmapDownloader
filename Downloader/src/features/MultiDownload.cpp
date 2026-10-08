@@ -656,7 +656,7 @@ void MultiDownload::drawMain() {
 
             tsk.callback(code, response, tsk);
         } else {
-            const int count = (tsk.end - tsk.beg) / 100 + 1;
+            const int count = (limit + 99) / 100;
             int offset = tsk.beg;
             for (int i = 0; i < count; ++i) {
                 response.clear();

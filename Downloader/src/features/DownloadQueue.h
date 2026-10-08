@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <mutex>
 #include <set>
 #include <shared_mutex>
 
@@ -35,6 +36,9 @@ class DownloadQueue : public Feature {
 
     std::set<DownloadTask> m_TaskQueueSet;
 
+    mutable std::set<int> m_RemovedSet;
+    inline static std::mutex m_RemovedMutex{};
+
     inline static std::shared_mutex m_Mutex{};
 
     void drawTaskItem(const DownloadTask &item) const;
@@ -51,6 +55,7 @@ public:
     }
 
     bool hasDownloadMapSet(const int id) const {
+        std::shared_lock _g(m_Mutex);
         return std::ranges::any_of(m_TaskQueueSet.begin(), m_TaskQueueSet.end(),
                                    [id](const DownloadTask &task) { return task.bm.sid == id; });
     }

@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Provider.h"
-#include "Provider.h"
 
 namespace api {
 

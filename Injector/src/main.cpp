@@ -15,6 +15,9 @@ using namespace std;
 #define LOGE(msg, ...)  printf_s("[ERROR] " msg "\n", ##__VA_ARGS__)
 #define OSU_NAME L"osu!.exe"
 
+// 仅申请注入与查询所需的最小权限，避免滥用 PROCESS_ALL_ACCESS
+#define INJECT_ACCESS (PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ)
+
 bool InjectDll(const HANDLE hProc, const char *path) {
     const HMODULE hKernel32 = GetModuleHandleA("Kernel32.dll");
     if (hKernel32 == nullptr) {
@@ -33,11 +36,13 @@ bool InjectDll(const HANDLE hProc, const char *path) {
     }
     if (!WriteProcessMemory(hProc, lpBaseAddress, path, strlen(path) + 1, nullptr)) {
         LOGE("Failed to write dll name to target process, error code: %d", GetLastError());
+        VirtualFreeEx(hProc, lpBaseAddress, 0, MEM_RELEASE);
         return false;
     }
     const HANDLE hThread = CreateRemoteThread(hProc, nullptr, 0, (LPTHREAD_START_ROUTINE)pLoadLibrary, lpBaseAddress, 0, nullptr);
     if (hThread == nullptr) {
         LOGE("Failed to create remote thread, error code: %d", GetLastError());
+        VirtualFreeEx(hProc, lpBaseAddress, 0, MEM_RELEASE);
         return false;
     }
     WaitForSingleObject(hThread, INFINITE);
@@ -99,11 +104,13 @@ std::filesystem::path GetOsuPath() {
 
         if (ERROR_SUCCESS == RegQueryValueEx(hKey, nullptr, nullptr, &dwType, (LPBYTE)&value, &dwSize)) {
             std::wstring wstr(value);
-            if (!wstr.empty()) {
-                wstr = wstr.substr(1, wstr.length() - 7);
-                std::filesystem::path path(wstr);
-                RegCloseKey(hKey);
-                return path;
+            if (wstr.size() > 7 && wstr.front() == L'"') {
+                const auto end = wstr.find(L'"', 1);
+                if (end != std::wstring::npos) {
+                    std::filesystem::path path(wstr.substr(1, end - 1));
+                    RegCloseKey(hKey);
+                    return path;
+                }
             }
         }
         RegCloseKey(hKey);
@@ -131,9 +138,10 @@ int main(int argc, char *argv[]) {
             }
         }
         LOGI("osu! found, pid: %d", pid);
-        HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+        HANDLE hProc = OpenProcess(INJECT_ACCESS, FALSE, pid);
         if (hProc == nullptr) {
             LOGE("Failed to open process, error code: %d", GetLastError());
+            return 1;
         }
 
         LOGI("Injecting dll...");
@@ -143,6 +151,7 @@ int main(int argc, char *argv[]) {
         if (InjectDll(hProc, sPath.c_str())) {
             LOGI("Dll injected successfully");
         }
+        CloseHandle(hProc);
     } else {
         auto path = std::filesystem::current_path() / "osuPath.txt";
         std::string line;
@@ -206,7 +215,8 @@ int main(int argc, char *argv[]) {
         si.cb = sizeof si;
 
 #ifndef _DEBUG
-        if (!CreateProcessW(nullptr, (L"explorer.exe " + osuPath.wstring()).data(), nullptr, nullptr, FALSE, 0, nullptr, osuPath.parent_path().c_str(), &si, &pi)) {
+        std::wstring cmd = L"explorer.exe \"" + osuPath.wstring() + L"\"";
+        if (!CreateProcessW(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr, osuPath.parent_path().c_str(), &si, &pi)) {
             LOGE("Failed to start osu!, error code: %d", GetLastError());
             Sleep(3000);
             exit(1);
@@ -219,16 +229,20 @@ int main(int argc, char *argv[]) {
         while ((pid = GetPidByName(OSU_NAME)) == 0) {
             Sleep(1000);
         }
-        HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+        HANDLE hProc = OpenProcess(INJECT_ACCESS, FALSE, pid);
         if (hProc == nullptr) {
             LOGE("Failed to open process, error code: %d", GetLastError());
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            return 1;
         }
         if (InjectDll(hProc, dllPath.string().c_str())) {
             LOGI("Dll injected successfully");
         }
         CloseHandle(hProc);
 #else
-        if (!CreateProcessW(nullptr, osuPath.wstring().data(),
+        std::wstring dbgCmd = L"\"" + osuPath.wstring() + L"\"";
+        if (!CreateProcessW(nullptr, dbgCmd.data(),
                             nullptr, nullptr, FALSE,
                             CREATE_SUSPENDED, nullptr, osuPath.parent_path().c_str(), &si, &pi)) {
             LOGE("Failed to start osu!, error code: %d", GetLastError());

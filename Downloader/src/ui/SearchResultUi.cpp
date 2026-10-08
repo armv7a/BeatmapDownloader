@@ -2,6 +2,7 @@
 #include "SearchResultUi.h"
 
 #include <optional>
+#include <mutex>
 
 #include "BlockingInput.hpp"
 #include "config/I18nManager.h"
@@ -13,25 +14,37 @@
 namespace ui::search::result {
 
 static bool isShow = false;
+static std::mutex s_Mutex;
 
 bool IsShowed() {
+    std::lock_guard _g(s_Mutex);
     return isShow;
 }
 
 std::optional<osu::Beatmap> curShowBm;
 
 void ShowSearchInfo(osu::Beatmap &bm) {
-    curShowBm = bm;
-    if (isShow) return;
-    isShow = true;
-    InputBlock::Push();
+    bool wasShown = false;
+    {
+        std::lock_guard _g(s_Mutex);
+        curShowBm = bm;
+        wasShown = isShow;
+        isShow = true;
+    }
+    if (!wasShown)
+        InputBlock::Push();
 }
 
 void Update() {
-    if (!isShow) return;
-    if (!curShowBm.has_value()) return;
+    std::optional<osu::Beatmap> bmCopy;
+    {
+        std::lock_guard _g(s_Mutex);
+        if (!isShow || !curShowBm.has_value())
+            return;
+        bmCopy = curShowBm;
+    }
 
-    auto &bm = *curShowBm;
+    auto &bm = *bmCopy;
     ImGui::SetNextWindowSize(ImVec2(300, 225), ImGuiCond_FirstUseEver);
     auto &lang = i18n::I18nManager::GetInstance();
 
@@ -48,7 +61,10 @@ void Update() {
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(lang.getTextCStr(hasMap ? "ReDownload" : "Download")).x) * 0.5f);
     if (ImGui::Button(lang.getTextCStr(hasMap ? "ReDownload" : "Download"))) {
         features::Downloader::GetInstance().postDownload(bm);
-        isShow = false;
+        {
+            std::lock_guard _g(s_Mutex);
+            isShow = false;
+        }
         InputBlock::Pop();
     }
 
@@ -59,8 +75,11 @@ void Update() {
 
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(lang.getTextCStr("Cancel")).x) * 0.5f);
     if (ImGui::Button(lang.getTextCStr("Cancel"))) {
-        curShowBm = {};
-        isShow = false;
+        {
+            std::lock_guard _g(s_Mutex);
+            curShowBm = {};
+            isShow = false;
+        }
         InputBlock::Pop();
     }
     

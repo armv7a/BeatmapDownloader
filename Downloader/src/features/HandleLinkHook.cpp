@@ -47,23 +47,41 @@ BOOL __stdcall HandleLinkHook::ShellExecuteExW_Hook(SHELLEXECUTEINFOW *pExecInfo
 
     bool LShiftDown = misc::Hotkey::IsDown(VK_SHIFT);
 
-    static std::string https = "https://";
-    static std::string http = "http://";
+    static const std::string https = "https://";
+    static const std::string http = "http://";
     auto s = inst.f_Domain.getValue();
-    if (s.find(http) == 0) {
-        s.erase(0, http.size());
-    } else if (s.find(https) == 0) {
+    if (s.starts_with(https)) {
         s.erase(0, https.size());
+    } else if (s.starts_with(http)) {
+        s.erase(0, http.size());
     }
-    if (s.back() == '/') {
+    while (!s.empty() && s.back() == '/') {
         s.pop_back();
     }
+
+    if (s.empty()) {
+        LOGW("Handle link domain is empty, skip");
+        return HookManager::CallOriginal(ShellExecuteExW_Hook, pExecInfo);
+    }
+
+    const auto escapeRegex = [](const std::string &in) {
+        static const std::string special = R"(\.^$|()[]{}*+?)";
+        std::string out;
+        out.reserve(in.size() * 2);
+        for (const char c : in) {
+            if (special.find(c) != std::string::npos)
+                out.push_back('\\');
+            out.push_back(c);
+        }
+        return out;
+    };
 
     auto &bmmgr = osu::BeatmapManager::GetInstance();
     auto &dl = Downloader::GetInstance();
     auto url = utils::ws2s(pExecInfo->lpFile);
 
-    const std::string domainPattern1 = s + R"(/(beatmapsets|s)/(\d+))";
+    const std::string domain = escapeRegex(s);
+    const std::string domainPattern1 = domain + R"(/(beatmapsets|s)/(\d+))";
     std::smatch match;
     if (std::regex re1(domainPattern1); std::regex_search(url, match, re1) && match.size() > 2) {
         const int id = std::stoi(match[2].str());
@@ -72,7 +90,7 @@ BOOL __stdcall HandleLinkHook::ShellExecuteExW_Hook(SHELLEXECUTEINFOW *pExecInfo
         return false;
     }
 
-    std::string domainPattern2 = s + R"(/(beatmaps|b)/(\d+))";
+    const std::string domainPattern2 = domain + R"(/(beatmaps|b)/(\d+))";
 
     if (std::regex re2(domainPattern2); std::regex_search(url, match, re2) && match.size() > 2) {
         const int id = std::stoi(match[2].str());

@@ -188,7 +188,10 @@ void features::Downloader::DownloadThread() {
 
             MoveFileW(path.wstring().c_str(), song.wstring().c_str());
         } else {
-            ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_HIDE);
+            if (utils::IsOszArchive(path))
+                ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_HIDE);
+            else
+                LOGW("Refusing to open non-archive file: %s", path.string().c_str());
         }
 
         osu::BeatmapManager::GetInstance().addBeatmap(bm);
@@ -245,13 +248,14 @@ void features::Downloader::drawMain() {
 
     if (f_GrantOsuAccount.getValue()) {
         static std::string un = f_OsuAccount->username();
-        static std::string pw = f_OsuAccount->password().md5();
+        static std::string pw;
         ImGui::Indent();
         if (ImGui::InputText(lang.getTextCStr("Username"), &un)) {
             f_OsuAccount->setUsername(un);
         }
         if (ImGui::PasswordInputText(lang.getTextCStr("Password"), &pw)) {
-            f_OsuAccount->setPassword(pw);
+            if (!pw.empty())
+                f_OsuAccount->setPassword(pw);
         }
         ImGui::Unindent();
     }
