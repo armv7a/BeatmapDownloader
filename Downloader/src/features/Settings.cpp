@@ -13,7 +13,7 @@ Settings::Settings() :
     Feature(),
     f_EnableToast("EnableToast", true),
     f_ToastDuration("ToastDuration", 3000),
-    f_EnableConsole("EnableConsole", true),
+    f_EnableConsole("EnableConsole", false),
     f_OsuPath("OsuPath", ""),
     f_Theme("Theme", 0),
     f_ShowMainUiOnStartup("ShowMainUiOnStartup", true) {
